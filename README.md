@@ -230,3 +230,19 @@ flowchart TB
     style L2 fill:#ffffff,stroke:#10b981
     style L3 fill:#ffffff,stroke:#6366f1
 ```
+
+## Highlights of this architecture
+
+- The event ledger is the single source of truth. L1 (Redis) and L2 (Postgres) are rebuildable projections of it.
+- Truly bitemporal. Every fact stores when it was true and when it was recorded, so late events backdate correctly.
+- Two System One gates:
+    Gate 1 (read path): Kai 0.6B pinned, with a code fallback on low confidence.
+    Gate 2 (write path): Kai 0.6B → Vega 27B auto cascade.
+- Hard constraints are enforced in code, never by the LLM.
+- Bloom and Cuckoo filters drop already-seen and rejected items in one Redis round trip.
+- 5-slot selection: 3 from top brands, 1 best-seller, 1 out-of-the-box pick, chosen with MMR for diversity.
+- Brand affinity is scored in a time-decayed ZSET per category.
+- Gift-proof sizes: frequency counts per scope stop one gift order from changing your size.
+- Idempotent ingest with a DLQ. Only user-written turns reach the models.
+- Graceful degradation: the slot mix shifts 3:1:1 → 1:3:1 → 0:4:1 as L2, then L1, fail.
+- Proactive engine: event-driven triggers plus a code policy gate, with price and stock re-checked before every send.
